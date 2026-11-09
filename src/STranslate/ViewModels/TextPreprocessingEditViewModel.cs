@@ -128,6 +128,8 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         _previewCancellation = cancellation;
         var snapshot = CreateConfiguration();
+        // Preview the draft without changing the saved switch or per-rule switches.
+        snapshot.IsEnabled = true;
         var input = PreviewInput;
         var invalid = _invalidConfiguration;
         IsPreviewing = true;

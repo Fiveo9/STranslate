@@ -44,7 +44,7 @@ public class TextPreprocessingEditorTests
     }
 
     [Fact]
-    public async Task PreviewTracksOrderRemovalAndGlobalSwitchWithoutSaving()
+    public async Task PreviewTracksOrderAndRemovalWhileIgnoringGlobalSwitchWithoutSaving()
     {
         var settings = CreateSettings();
         using var editor = new TextPreprocessingEditViewModel(settings, new(), Translate);
@@ -62,14 +62,32 @@ public class TextPreprocessingEditorTests
         Assert.Equal([0, 1], editor.PreviewMatches.Select(match => match.MatchCount));
         editor.IsEnabled = false;
         await editor.PreviewTask;
-        Assert.Equal("secret", editor.PreviewText);
-        Assert.Equal(0, editor.PreviewMatchCount);
+        Assert.Equal("public", editor.PreviewText);
+        Assert.Equal(1, editor.PreviewMatchCount);
         Assert.True(settings.TextPreprocessing.IsEnabled);
         editor.IsEnabled = true;
         editor.SelectedRule = editor.Rules[1];
         editor.RemoveRuleCommand.Execute(null);
         await editor.PreviewTask;
         Assert.Equal("secret", editor.PreviewText);
+    }
+
+    [Fact]
+    public async Task DisabledConfigurationCanBeTestedWithoutEnablingTranslationOrDisabledRules()
+    {
+        var settings = CreateSettings();
+        settings.TextPreprocessing.IsEnabled = false;
+        settings.TextPreprocessing.Rules.Add(new() { Pattern = "public", Replacement = "wrong", IsEnabled = false });
+        var service = new TextPreprocessingService();
+        using var editor = new TextPreprocessingEditViewModel(settings, service, Translate);
+        editor.PreviewInput = "secret";
+        await editor.PreviewTask;
+        Assert.Equal("public", editor.PreviewText);
+        Assert.Single(editor.PreviewMatches);
+        Assert.False(settings.TextPreprocessing.IsEnabled);
+        Assert.Equal("secret", (await service.PrepareAsync("secret", settings.TextPreprocessing)).RequestText);
+        Assert.True(await editor.ApplyAsync());
+        Assert.False(settings.TextPreprocessing.IsEnabled);
     }
 
     [Fact]

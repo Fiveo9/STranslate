@@ -253,6 +253,9 @@
     <sys:String x:Key="Translate_TextPreprocessingMatchCount">Matches</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingRules">Rules</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingPreview">Live Preview</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingPreviewDraft">Test the current draft without changing saved settings. Save to apply your edits.</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingPreviewSimulation">The draft switch is off. This simulates enabling it; translation still follows the saved switch.</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingPreviewResult">Test result</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingNoRuleSelected">Select a rule to edit, or add a new rule</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingIgnoreCaseDescription">(?i) Ignore case when matching</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingMultilineDescription">(?m) Multiline mode: ^ and $ match line starts and ends</sys:String>
