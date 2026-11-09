@@ -262,6 +262,8 @@
     <sys:String x:Key="Translate_TextPreprocessingAbbreviated">Long text is shown in abbreviated form. See the text boxes above for the full input and final result.</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingStepBefore">Before this rule</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingStepAfter">After this rule</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingPatternHint">Enter a .NET regular expression, for example \bACME-\d+\b.</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingIncomplete">Complete the enabled rules and enter test text to preview the result.</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingNoRuleSelected">Select a rule to edit, or add a new rule</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingIgnoreCaseDescription">(?i) Ignore case when matching</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingMultilineDescription">(?m) Multiline mode: ^ and $ match line starts and ends</sys:String>

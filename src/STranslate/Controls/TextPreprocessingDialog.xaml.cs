@@ -19,6 +19,17 @@ public partial class TextPreprocessingDialog : ContentDialog
         {
             if (await ((TextPreprocessingEditViewModel)DataContext).ApplyAsync())
                 Hide();
+            else if (DataContext is TextPreprocessingEditViewModel { PatternError.Length: > 0 } editor)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (!IsVisible || editor.PatternError.Length == 0) return;
+                    PatternInput.BringIntoView();
+                    PatternInput.Focus();
+                    var offset = Math.Clamp(editor.PatternErrorOffset ?? 0, 0, PatternInput.Text.Length);
+                    PatternInput.Select(offset, offset < PatternInput.Text.Length ? 1 : 0);
+                }, System.Windows.Threading.DispatcherPriority.DataBind);
+            }
         }
         finally { IsPrimaryButtonEnabled = true; }
     }

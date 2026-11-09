@@ -126,6 +126,18 @@ internal static class Program
             await Task.Delay(200);
             savedEditor.Rules[0].Replacement = "Saved";
             var saveButton = Descendants(saveDialog).OfType<Button>().First(button => button.Name == "PrimaryButton");
+            savedEditor.Rules[1].Pattern = "(";
+            saveButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            await Task.Delay(250);
+            Require(!saveShown.IsCompleted, "Invalid rule closed the editor");
+            Require(!string.IsNullOrEmpty(savedEditor.PatternError), "Pattern error is missing from its field");
+            var patternInput = (TextBox)saveDialog.FindName("PatternInput");
+            Require(ReferenceEquals(savedEditor.SelectedRule, savedEditor.Rules[1]) && patternInput.Text == "(",
+                "Save failure did not display the other invalid rule");
+            Require(patternInput.SelectionStart == Math.Clamp(savedEditor.PatternErrorOffset ?? 0, 0, patternInput.Text.Length),
+                "Save failure did not select the error position");
+            Require(settings.TextPreprocessing.Rules[0].Replacement == "Product A", "Failed save changed settings");
+            savedEditor.Rules[1].Pattern = "today";
             saveButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
             await saveShown.WaitAsync(TimeSpan.FromSeconds(5));
             Require(settings.TextPreprocessing.Rules[0].Replacement == "Saved", "Save button did not apply draft");

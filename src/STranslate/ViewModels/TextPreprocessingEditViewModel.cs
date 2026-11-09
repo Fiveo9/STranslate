@@ -18,6 +18,7 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
     private int _revision;
     private bool _disposed;
     private bool _initializing = true;
+    private TextPreprocessingException? _patternFailure;
 
     public TextPreprocessingEditViewModel(Settings settings, TextPreprocessingService service, Func<string, string> translate)
     {
@@ -53,6 +54,9 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
     [ObservableProperty] public partial bool IsPreviewing { get; set; }
     [ObservableProperty] public partial bool IsSaving { get; set; }
     [ObservableProperty] public partial TextPreviewComparison? PreviewDiff { get; set; }
+    [ObservableProperty] public partial string PatternError { get; set; } = string.Empty;
+    [ObservableProperty] public partial int? PatternErrorOffset { get; set; }
+    [ObservableProperty] public partial bool IsPreviewIncomplete { get; set; }
     internal Task PreviewTask { get; private set; } = Task.CompletedTask;
 
     partial void OnIsEnabledChanged(bool value)
@@ -61,6 +65,8 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
     }
 
     partial void OnPreviewInputChanged(string value) => QueuePreview();
+
+    partial void OnSelectedRuleChanged(TextReplacementRule? value) => UpdatePatternError();
 
     [RelayCommand]
     private void AddRule()
@@ -108,6 +114,10 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
     {
         _invalidConfiguration = false;
         _revision++;
+        _patternFailure = null;
+        PatternError = string.Empty;
+        PatternErrorOffset = null;
+        PreviewError = string.Empty;
         QueuePreview();
     }
 
@@ -134,11 +144,20 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
         var input = PreviewInput;
         var invalid = _invalidConfiguration;
         IsPreviewing = true;
+        IsPreviewIncomplete = false;
         try
         {
             await Task.Delay(180, cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (_disposed) return;
             if (invalid)
                 throw new TextPreprocessingException("", "", "", errorKind: "InvalidConfiguration");
+            if (input.Length == 0 || snapshot.Rules.Any(rule => rule.IsEnabled && string.IsNullOrEmpty(rule.Pattern)))
+            {
+                ClearPreview();
+                IsPreviewIncomplete = true;
+                return;
+            }
             var prepared = await _service.PrepareAsync(input, snapshot, cancellation.Token, includePreview: true);
             var difference = await Task.Run(() => TextPreprocessingPreviewDiff.Create(
                 input, prepared.RequestText, cancellation.Token), cancellation.Token);
@@ -157,11 +176,8 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
         catch (TextPreprocessingException ex)
         {
             if (_disposed || cancellation.IsCancellationRequested) return;
-            PreviewText = string.Empty;
-            PreviewDiff = null;
-            PreviewMatchCount = 0;
-            PreviewMatches.Clear();
-            PreviewError = TextPreprocessingErrorText.Format(ex, _translate);
+            ClearPreview();
+            PresentFailure(ex);
         }
         finally
         {
@@ -172,6 +188,32 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
             }
             cancellation.Dispose();
         }
+    }
+
+    private void ClearPreview()
+    {
+        PreviewText = string.Empty;
+        PreviewDiff = null;
+        PreviewMatchCount = 0;
+        PreviewMatches.Clear();
+        PreviewError = string.Empty;
+    }
+
+    private void PresentFailure(TextPreprocessingException failure)
+    {
+        _patternFailure = failure.ErrorKind == "InvalidPattern" ? failure : null;
+        UpdatePatternError();
+        if (_patternFailure is null)
+            PreviewError = TextPreprocessingErrorText.Format(failure, _translate);
+    }
+
+    private void UpdatePatternError()
+    {
+        var selectedFailure = _patternFailure is { } failure && SelectedRule?.Id == failure.RuleId;
+        PatternError = selectedFailure ? TextPreprocessingErrorText.Format(_patternFailure!, _translate) : string.Empty;
+        PatternErrorOffset = selectedFailure ? _patternFailure!.ErrorOffset : null;
+        if (_patternFailure is not null)
+            PreviewError = selectedFailure ? string.Empty : TextPreprocessingErrorText.Format(_patternFailure, _translate);
     }
 
     public async Task<bool> ApplyAsync()
@@ -192,9 +234,10 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return false; }
         catch (TextPreprocessingException ex)
         {
+            if (_disposed || revision != _revision) return false;
             _previewCancellation?.Cancel();
-            PreviewError = TextPreprocessingErrorText.Format(ex, _translate);
             SelectedRule = Rules.FirstOrDefault(rule => rule.Id == ex.RuleId) ?? SelectedRule;
+            PresentFailure(ex);
             return false;
         }
         finally { IsSaving = false; }

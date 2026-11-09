@@ -224,12 +224,36 @@
                                     Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}" />
                             </DockPanel>
                             <TextBox
+                                x:Name="PatternInput"
                                 Text="{Binding Pattern, UpdateSourceTrigger=PropertyChanged}"
                                 FontFamily="Consolas, Cascadia Code, Courier New"
                                 TextWrapping="Wrap"
                                 MinHeight="32"
                                 ui:ControlHelper.CornerRadius="6"
                                 Margin="0,0,0,8" />
+
+                            <TextBlock
+                                x:Name="PatternErrorText"
+                                Text="{Binding DataContext.PatternError, RelativeSource={RelativeSource AncestorType=ui:ContentDialog}}"
+                                Visibility="{Binding DataContext.PatternError, RelativeSource={RelativeSource AncestorType=ui:ContentDialog}, Converter={cnvt:StringToVisibilityConverter}}"
+                                TextWrapping="Wrap" Margin="0,0,0,8"
+                                Foreground="{DynamicResource {x:Static ui:ThemeKeys.SystemFillColorCautionBrushKey}}" />
+                            <TextBlock Text="{DynamicResource Translate_TextPreprocessingPatternHint}" TextWrapping="Wrap" Margin="0,0,0,8">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Pattern}" Value="" />
+                                                    <Condition Binding="{Binding DataContext.PatternError, RelativeSource={RelativeSource AncestorType=ui:ContentDialog}}" Value="" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
                             <!-- 替换文本 -->
                             <DockPanel Margin="0,0,0,3">
@@ -485,6 +509,8 @@
                     </ItemsControl>
 
                     <!-- 错误与警告提示条 -->
+                    <TextBlock Text="{DynamicResource Translate_TextPreprocessingIncomplete}" TextWrapping="Wrap" Margin="0,6,0,0"
+                        Visibility="{Binding IsPreviewIncomplete, Converter={cnvt:BoolToVisibilityConverter}}" />
                     <Border
                         Margin="0,4,0,0"
                         Padding="10,6"

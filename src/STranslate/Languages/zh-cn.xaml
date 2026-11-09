@@ -262,6 +262,8 @@
     <sys:String x:Key="Translate_TextPreprocessingAbbreviated">长文本已简化显示；完整输入和结果请查看上方文本框。</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingStepBefore">本条规则执行前</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingStepAfter">本条规则执行后</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingPatternHint">请输入 .NET 正则表达式，例如 \bACME-\d+\b。</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingIncomplete">请先填写完整的启用规则和测试文本，再查看预览。</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingNoRuleSelected">请选择一条规则以编辑，或添加新规则</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingIgnoreCaseDescription">(?i) 匹配时忽略大小写</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingMultilineDescription">(?m) 多行模式：^ 和 $ 匹配每一行的行首和行尾</sys:String>

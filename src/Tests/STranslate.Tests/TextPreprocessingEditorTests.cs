@@ -97,8 +97,9 @@ public class TextPreprocessingEditorTests
         using var editor = new TextPreprocessingEditViewModel(settings, new(), Translate);
         editor.Rules[0].Pattern = "(";
         await editor.PreviewTask;
-        Assert.Contains("TranslatePreprocessingFailed", editor.PreviewError);
-        Assert.Contains("Position", editor.PreviewError);
+        Assert.Contains("TranslatePreprocessingFailed", editor.PatternError);
+        Assert.Contains("Position", editor.PatternError);
+        Assert.Empty(editor.PreviewError);
         Assert.Empty(editor.PreviewText);
         Assert.False(await editor.ApplyAsync());
     }
@@ -113,6 +114,93 @@ public class TextPreprocessingEditorTests
         editor.Rules[0].Replacement = "new";
         await Task.WhenAll(oldPreview, editor.PreviewTask);
         Assert.Equal("new", editor.PreviewText);
+    }
+
+    [Fact]
+    public async Task NewEmptyRuleShowsGuidanceUntilSaveIsAttempted()
+    {
+        using var editor = new TextPreprocessingEditViewModel(CreateSettings(), new(), Translate);
+        editor.AddRuleCommand.Execute(null);
+        await editor.PreviewTask;
+        Assert.Empty(editor.PreviewError);
+        Assert.Empty(editor.PatternError);
+        Assert.True(editor.IsPreviewIncomplete);
+        Assert.False(await editor.ApplyAsync());
+        Assert.NotEmpty(editor.PatternError);
+        editor.SelectedRule!.Pattern = "valid";
+        await editor.PreviewTask;
+        Assert.Empty(editor.PatternError);
+        Assert.False(editor.IsPreviewIncomplete);
+    }
+
+    [Fact]
+    public async Task SaveSelectsInvalidDisabledRuleAndFieldErrorFollowsSelection()
+    {
+        var settings = CreateSettings();
+        settings.TextPreprocessing.Rules.Add(new() { Id = "broken", Pattern = "(", IsEnabled = false });
+        using var editor = new TextPreprocessingEditViewModel(settings, new(), Translate);
+        Assert.False(await editor.ApplyAsync());
+        Assert.Equal("broken", editor.SelectedRule!.Id);
+        Assert.NotEmpty(editor.PatternError);
+        Assert.NotNull(editor.PatternErrorOffset);
+        editor.SelectedRule = editor.Rules[0];
+        Assert.Empty(editor.PatternError);
+        editor.SelectedRule = editor.Rules[1];
+        Assert.NotEmpty(editor.PatternError);
+        editor.SelectedRule.Pattern = "fixed";
+        await editor.PreviewTask;
+        Assert.Empty(editor.PatternError);
+        Assert.Null(editor.PatternErrorOffset);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ObsoleteSaveFailureCannotPublishAfterEditingOrDisposing(bool dispose)
+    {
+        var settings = CreateSettings();
+        for (var i = 0; i < 500; i++)
+            settings.TextPreprocessing.Rules.Add(new() { Pattern = $"sample{i}" });
+        settings.TextPreprocessing.Rules.Add(new() { Pattern = "(" });
+        using var editor = new TextPreprocessingEditViewModel(settings, new(), Translate);
+        using var completion = new QueuedContext();
+        var previous = SynchronizationContext.Current;
+        Task<bool> save;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(completion);
+            save = editor.ApplyAsync();
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
+        Assert.False(save.IsCompleted);
+        Assert.True(completion.Ready.Wait(TimeSpan.FromSeconds(5)));
+        if (dispose) editor.Dispose();
+        else editor.Rules[^1].Pattern = "fixed";
+        completion.Drain();
+        Assert.False(await save);
+        Assert.Empty(editor.PatternError);
+        Assert.Empty(editor.PreviewError);
+        if (!dispose)
+        {
+            await editor.PreviewTask;
+            Assert.Empty(editor.PatternError);
+        }
+    }
+
+    private sealed class QueuedContext : SynchronizationContext, IDisposable
+    {
+        private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _queue = new();
+        internal ManualResetEventSlim Ready { get; } = new();
+        public override void Post(SendOrPostCallback callback, object? state)
+        {
+            _queue.Enqueue(() => callback(state));
+            Ready.Set();
+        }
+        internal void Drain()
+        {
+            while (_queue.TryDequeue(out var callback)) callback();
+        }
+        public void Dispose() => Ready.Dispose();
     }
 
     private static Settings CreateSettings() => new()
