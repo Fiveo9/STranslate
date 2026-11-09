@@ -31,6 +31,7 @@
     <Grid Margin="20,10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Margin="0,0,0,12">
@@ -232,7 +233,38 @@
                 </Grid>
             </Grid>
         </DockPanel>
-        <Grid Grid.Row="1" Margin="0,0,0,20">
+        <ui:SettingsCard
+            Grid.Row="1"
+            Margin="0,0,0,12"
+            Header="{DynamicResource Translate_TextPreprocessing}"
+            Description="{DynamicResource Translate_TextPreprocessingScope}">
+            <ui:SettingsCard.HeaderIcon>
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextEditStyle_20_Regular}" />
+            </ui:SettingsCard.HeaderIcon>
+            <StackPanel>
+                <TextBlock Margin="0,0,0,4" HorizontalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="{DynamicResource Translate_TextPreprocessingOff}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.TextPreprocessing.IsEnabled}" Value="True">
+                                    <Setter Property="Text" Value="{DynamicResource Translate_TextPreprocessingOn}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button
+                    Command="{Binding EditTextPreprocessingCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource Self}}">
+                    <TextBlock>
+                        <Run Text="{DynamicResource Translate_TextPreprocessingManage}" />
+                        <Run Text=" · " /><Run Text="{Binding Settings.TextPreprocessing.Rules.Count, Mode=OneWay}" />
+                    </TextBlock>
+                </Button>
+            </StackPanel>
+        </ui:SettingsCard>
+        <Grid Grid.Row="2" Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*" MinWidth="200" />
                 <ColumnDefinition Width="1" />
