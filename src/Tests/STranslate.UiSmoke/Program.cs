@@ -53,7 +53,7 @@ internal static class Program
                 {
                     var resources = new ResourceDictionary { Source = new Uri(Path.Combine(AppContext.BaseDirectory, "Languages", language + ".xaml")) };
                     app.Resources.MergedDictionaries.Add(resources);
-                    foreach (var size in new[] { new Size(1000, 780), new Size(700, 600) })
+                    foreach (var size in new[] { new Size(1000, 780), new Size(700, 600), new Size(600, 600) })
                         await VerifyDialogAsync(language, size, output);
                     app.Resources.MergedDictionaries.Remove(resources);
                 }
@@ -114,6 +114,58 @@ internal static class Program
                 block.Inlines.OfType<System.Windows.Documents.Run>().Any(run => run.TextDecorations.Count > 0)),
                 "Preview differences are not highlighted");
             Capture(dialog, Path.Combine(output, $"{language}-{size.Width}x{size.Height}.png"));
+            var initialFontSize = dialog.FontSize;
+            var initialPattern = editor.SelectedRule!.Pattern;
+            var initialReplacement = editor.SelectedRule.Replacement;
+            dialog.FontSize = 18;
+            var enlargedFields = Descendants(dialog).OfType<Control>().Where(control => control is TextBox or CheckBox)
+                .Select(control => (Control: control, Size: control.FontSize)).ToArray();
+            foreach (var field in enlargedFields) field.Control.FontSize = 18;
+            var enlargedTitle = (TextBlock)dialog.FindName("RuleListTitle");
+            var originalTitleSize = enlargedTitle.FontSize;
+            enlargedTitle.FontSize = 18;
+            editor.SelectedRule.Pattern = string.Join(" ", Enumerable.Repeat("longexpression", 20));
+            editor.SelectedRule.Replacement = string.Join("\n", Enumerable.Repeat("Replacement line", 6));
+            await editor.PreviewTask;
+            dialog.UpdateLayout();
+            var editorCard = (Border)dialog.FindName("RuleEditorCard");
+            var ruleListPanel = (Grid)dialog.FindName("RuleListPanel");
+            var ruleListTitle = (TextBlock)dialog.FindName("RuleListTitle");
+            var titleBounds = ruleListTitle.TransformToAncestor(ruleListPanel).TransformBounds(new Rect(ruleListTitle.RenderSize));
+            foreach (var button in Descendants(ruleListPanel).OfType<Button>())
+            {
+                var bounds = button.TransformToAncestor(ruleListPanel).TransformBounds(new Rect(button.RenderSize));
+                Require(bounds.Left >= -1 && bounds.Right <= ruleListPanel.ActualWidth + 1,
+                    "Rule toolbar button exceeds the narrow list column");
+                var overlap = Rect.Intersect(titleBounds, bounds);
+                Require(overlap.IsEmpty || overlap.Width < 1 || overlap.Height < 1,
+                    "Rule toolbar overlaps its title");
+            }
+            foreach (var field in Descendants(editorCard).OfType<FrameworkElement>()
+                .Where(element => element is TextBox or CheckBox))
+            {
+                var bounds = field.TransformToAncestor(editorCard).TransformBounds(new Rect(field.RenderSize));
+                Require(bounds.Left >= -1 && bounds.Top >= -1 && bounds.Right <= editorCard.ActualWidth + 1 &&
+                    bounds.Bottom <= editorCard.ActualHeight + 1, "Large-font rule field exceeds its editor card");
+            }
+            Capture(dialog, Path.Combine(output, $"layout-{language}-{size.Width}x{size.Height}.png"));
+            dialog.FontSize = initialFontSize;
+            foreach (var field in enlargedFields) field.Control.FontSize = field.Size;
+            enlargedTitle.FontSize = originalTitleSize;
+            editor.SelectedRule.Pattern = initialPattern;
+            editor.SelectedRule.Replacement = initialReplacement;
+            await editor.PreviewTask;
+            var previewSection = (Expander)dialog.FindName("PreviewSection");
+            var previewInput = (TextBox)dialog.FindName("PreviewInputBox");
+            previewSection.IsExpanded = false;
+            await Task.Delay(80);
+            Require(!previewInput.IsVisible, "Preview cannot be collapsed to make room for editing");
+            previewSection.IsExpanded = true;
+            await Task.Delay(80);
+            Require(previewInput.IsVisible, "Preview did not reappear after expanding");
+            difference.BringIntoView();
+            await Task.Delay(80);
+            Capture(dialog, Path.Combine(output, $"preview-{language}-{size.Width}x{size.Height}.png"));
             editor.Rules[0].Replacement = "Discarded";
             Require(ReferenceEquals(original, settings.TextPreprocessing), "Draft leaked into settings");
             dialog.Hide();

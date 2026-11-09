@@ -37,28 +37,30 @@
             </ui:SettingsCard>
 
             <!-- 2. 规则列表与编辑区 -->
-            <Grid Height="265">
+            <Grid MinHeight="265">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="205" />
+                    <ColumnDefinition Width="*" MinWidth="170" MaxWidth="240" />
                     <ColumnDefinition Width="12" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="2*" />
                 </Grid.ColumnDefinitions>
 
                 <!-- 左侧：规则列表与操作栏 -->
-                <Grid Grid.Column="0">
+                <Grid x:Name="RuleListPanel" Grid.Column="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0" Margin="2,0,2,6">
+                    <StackPanel Grid.Row="0" Margin="2,0,2,6">
                         <TextBlock
+                            x:Name="RuleListTitle"
                             Text="{DynamicResource Translate_TextPreprocessingRules}"
+                            Margin="0,0,0,6"
                             FontWeight="SemiBold"
                             VerticalAlignment="Center" />
                         <ikw:SimpleStackPanel
                             Orientation="Horizontal"
-                            HorizontalAlignment="Right"
+                            HorizontalAlignment="Left"
                             Spacing="4">
                             <control:IconButton
                                 Width="28"
@@ -88,7 +90,7 @@
                                 Icon="{x:Static ui:FluentSystemIcons.ChevronDown_20_Regular}"
                                 ToolTip="{DynamicResource Translate_TextPreprocessingMoveDown}" />
                         </ikw:SimpleStackPanel>
-                    </DockPanel>
+                    </StackPanel>
 
                     <Border
                         Grid.Row="1"
@@ -98,6 +100,7 @@
                         CornerRadius="8"
                         Padding="5">
                         <ListBox
+                            MaxHeight="360"
                             Background="Transparent"
                             BorderThickness="0"
                             ItemsSource="{Binding Rules}"
@@ -186,6 +189,7 @@
 
                 <!-- 右侧：选中规则编辑卡片 -->
                 <Border
+                    x:Name="RuleEditorCard"
                     Grid.Column="2"
                     Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
                     BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
@@ -229,6 +233,8 @@
                                 FontFamily="Consolas, Cascadia Code, Courier New"
                                 TextWrapping="Wrap"
                                 MinHeight="32"
+                                MaxHeight="112"
+                                VerticalScrollBarVisibility="Auto"
                                 ui:ControlHelper.CornerRadius="6"
                                 Margin="0,0,0,8" />
 
@@ -274,8 +280,8 @@
                                 FontFamily="Consolas, Cascadia Code, Courier New"
                                 AcceptsReturn="True"
                                 TextWrapping="Wrap"
-                                MinHeight="44"
-                                MaxHeight="60"
+                                MinHeight="64"
+                                MaxHeight="132"
                                 VerticalScrollBarVisibility="Auto"
                                 ui:ControlHelper.CornerRadius="6"
                                 Margin="0,0,0,8" />
@@ -287,20 +293,23 @@
                                 BorderThickness="1"
                                 CornerRadius="6"
                                 Padding="12,6">
-                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="14">
+                                <WrapPanel>
                                     <CheckBox
+                                        Margin="0,3,12,3"
                                         Content="{DynamicResource Translate_TextPreprocessingIgnoreCase}"
                                         IsChecked="{Binding IgnoreCase}"
                                         ToolTip="{DynamicResource Translate_TextPreprocessingIgnoreCaseDescription}" />
                                     <CheckBox
+                                        Margin="0,3,12,3"
                                         Content="{DynamicResource Translate_TextPreprocessingMultiline}"
                                         IsChecked="{Binding Multiline}"
                                         ToolTip="{DynamicResource Translate_TextPreprocessingMultilineDescription}" />
                                     <CheckBox
+                                        Margin="0,3,0,3"
                                         Content="{DynamicResource Translate_TextPreprocessingSingleline}"
                                         IsChecked="{Binding Singleline}"
                                         ToolTip="{DynamicResource Translate_TextPreprocessingSinglelineDescription}" />
-                                </ikw:SimpleStackPanel>
+                                </WrapPanel>
                             </Border>
                         </StackPanel>
 
@@ -328,14 +337,12 @@
             </Grid>
 
             <!-- 3. 实时预览与测试卡片 -->
-            <Border
+            <Expander
+                x:Name="PreviewSection"
+                IsExpanded="True"
                 Margin="0,12,0,0"
-                Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
-                BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
-                BorderThickness="1"
-                CornerRadius="8"
-                Padding="16,11">
-                <StackPanel>
+                HorizontalContentAlignment="Stretch">
+                <Expander.Header>
                     <!-- 预览头部：标题、加载指示与匹配数 -->
                     <DockPanel Margin="0,0,0,8">
                         <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -378,7 +385,12 @@
                             </Border>
                         </ikw:SimpleStackPanel>
                     </DockPanel>
-
+                </Expander.Header>
+                <Border
+                    Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
+                    BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
+                    BorderThickness="1" CornerRadius="8" Padding="16,11">
+                <StackPanel>
                     <TextBlock
                         Margin="0,0,0,8"
                         Text="{DynamicResource Translate_TextPreprocessingPreviewDraft}"
@@ -423,8 +435,10 @@
                                 FontSize="{DynamicResource STControlFontSize12}"
                                 Margin="0,0,0,4" />
                             <TextBox
+                                x:Name="PreviewInputBox"
                                 Grid.Row="1"
-                                Height="72"
+                                MinHeight="96"
+                                MaxHeight="240"
                                 AcceptsReturn="True"
                                 TextWrapping="Wrap"
                                 VerticalScrollBarVisibility="Auto"
@@ -456,7 +470,8 @@
                                 Margin="0,0,0,4" />
                             <TextBox
                                 Grid.Row="1"
-                                Height="72"
+                                MinHeight="96"
+                                MaxHeight="240"
                                 IsReadOnly="True"
                                 TextWrapping="Wrap"
                                 VerticalScrollBarVisibility="Auto"
@@ -534,7 +549,8 @@
                         </ikw:SimpleStackPanel>
                     </Border>
                 </StackPanel>
-            </Border>
+                </Border>
+            </Expander>
         </StackPanel>
     </ui:ScrollViewerEx>
 </ui:ContentDialog>
