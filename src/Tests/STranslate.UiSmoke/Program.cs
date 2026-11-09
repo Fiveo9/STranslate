@@ -105,6 +105,36 @@ internal static class Program
             Require(primary.Background is SolidColorBrush { Color.A: > 0 }, "Primary button accent is missing");
             Require(boxes.Any(box => box.Text == editor.PreviewText), "Preview binding missing");
             Require(boxes.Any(box => box.Text == original.Rules[0].Pattern), "Rule editor binding missing");
+            var ruleList = (ListBox)dialog.FindName("RuleList");
+            var moveUp = Descendants((IconButton)dialog.FindName("MoveUpButton")).OfType<Button>().Single();
+            var moveDown = Descendants((IconButton)dialog.FindName("MoveDownButton")).OfType<Button>().Single();
+            Require(!moveUp.IsEnabled && moveDown.IsEnabled, "First rule has incorrect move controls");
+            var movingRule = editor.Rules[1];
+            editor.SelectedRule = movingRule;
+            await Task.Delay(80);
+            Require(moveUp.IsEnabled && !moveDown.IsEnabled, "Last rule has incorrect move controls");
+            var invoke = (System.Windows.Automation.Provider.IInvokeProvider)
+                new System.Windows.Automation.Peers.ButtonAutomationPeer(moveUp)
+                    .GetPattern(System.Windows.Automation.Peers.PatternInterface.Invoke)!;
+            invoke.Invoke();
+            await Task.Delay(80);
+            await editor.PreviewTask;
+            dialog.UpdateLayout();
+            Require(ReferenceEquals(ruleList.Items[0], movingRule) && !moveUp.IsEnabled && moveDown.IsEnabled,
+                "Moving a rule did not refresh the list and controls");
+            var firstContainer = (ListBoxItem)ruleList.ItemContainerGenerator.ContainerFromIndex(0);
+            Require(Descendants(firstContainer).OfType<TextBlock>().Any(text => text.Text == "1"),
+                "Rule numbering did not follow the new order");
+            Require(Descendants(firstContainer).OfType<TextBlock>().Any(text => text.Text == "today → this·week"),
+                "Rule summary is not bound to the replacement");
+            movingRule.Replacement = string.Empty;
+            await editor.PreviewTask;
+            Require(Descendants(firstContainer).OfType<TextBlock>().Any(text => text.Text == "today → ∅"),
+                "Rule summary did not update while editing");
+            movingRule.Replacement = "this week";
+            editor.MoveRuleDownCommand.Execute(null);
+            editor.SelectedRule = editor.Rules[0];
+            await editor.PreviewTask;
             Require(dialog.ActualWidth <= owner.ActualWidth && dialog.ActualHeight <= owner.ActualHeight, "Dialog exceeds owner");
             var difference = Descendants(dialog).OfType<Expander>()
                 .Single(expander => Equals(expander.Header, Translate("Translate_TextPreprocessingDifference")));
@@ -132,7 +162,7 @@ internal static class Program
             var ruleListPanel = (Grid)dialog.FindName("RuleListPanel");
             var ruleListTitle = (TextBlock)dialog.FindName("RuleListTitle");
             var titleBounds = ruleListTitle.TransformToAncestor(ruleListPanel).TransformBounds(new Rect(ruleListTitle.RenderSize));
-            foreach (var button in Descendants(ruleListPanel).OfType<Button>())
+            foreach (var button in Descendants(ruleListPanel).OfType<ButtonBase>().Where(button => button.IsVisible))
             {
                 var bounds = button.TransformToAncestor(ruleListPanel).TransformBounds(new Rect(button.RenderSize));
                 Require(bounds.Left >= -1 && bounds.Right <= ruleListPanel.ActualWidth + 1,

@@ -264,6 +264,8 @@
     <sys:String x:Key="Translate_TextPreprocessingStepAfter">本条规则执行后</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingPatternHint">请输入 .NET 正则表达式，例如 \bACME-\d+\b。</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingIncomplete">请先填写完整的启用规则和测试文本，再查看预览。</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingListOrder">按编号从上到下执行，后面的规则处理前面的结果。摘要中的 ∅ 表示空文本，· 表示空格。</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingEmptyReplacement">替换文本留空会移除匹配内容；实际换行请直接按 Enter 输入。</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingNoRuleSelected">请选择一条规则以编辑，或添加新规则</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingIgnoreCaseDescription">(?i) 匹配时忽略大小写</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingMultilineDescription">(?m) 多行模式：^ 和 $ 匹配每一行的行首和行尾</sys:String>

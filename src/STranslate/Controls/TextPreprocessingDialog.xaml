@@ -15,6 +15,8 @@
     PrimaryButtonStyle="{DynamicResource {x:Static ui:ThemeKeys.AccentButtonStyleKey}}"
     PrimaryButtonText="{DynamicResource Save}">
     <ui:ContentDialog.Resources>
+        <cnvt:TextReplacementSummaryConverter x:Key="ReplacementSummaryConverter" />
+        <cnvt:TextReplacementOrderConverter x:Key="ReplacementOrderConverter" />
         <sys:Double x:Key="ContentDialogMaxWidth">860</sys:Double>
         <sys:Double x:Key="ContentDialogMaxHeight">720</sys:Double>
         <sys:Double x:Key="ContentDialogMinWidth">600</sys:Double>
@@ -35,6 +37,8 @@
                     OnContent="{DynamicResource Enable}"
                     OffContent="{DynamicResource Disable}" />
             </ui:SettingsCard>
+
+            <TextBlock Text="{DynamicResource Translate_TextPreprocessingListOrder}" TextWrapping="Wrap" Margin="0,0,0,8" />
 
             <!-- 2. 规则列表与编辑区 -->
             <Grid MinHeight="265">
@@ -72,21 +76,20 @@
                                 Width="28"
                                 Height="28"
                                 Command="{Binding RemoveRuleCommand}"
-                                IsEnabled="{Binding SelectedRule, Converter={cnvt:NullToBoolInverseConverter}}"
                                 Icon="{x:Static ui:FluentSystemIcons.Delete_20_Regular}"
                                 ToolTip="{DynamicResource Delete}" />
                             <control:IconButton
+                                x:Name="MoveUpButton"
                                 Width="28"
                                 Height="28"
                                 Command="{Binding MoveRuleUpCommand}"
-                                IsEnabled="{Binding SelectedRule, Converter={cnvt:NullToBoolInverseConverter}}"
                                 Icon="{x:Static ui:FluentSystemIcons.ChevronUp_20_Regular}"
                                 ToolTip="{DynamicResource Translate_TextPreprocessingMoveUp}" />
                             <control:IconButton
+                                x:Name="MoveDownButton"
                                 Width="28"
                                 Height="28"
                                 Command="{Binding MoveRuleDownCommand}"
-                                IsEnabled="{Binding SelectedRule, Converter={cnvt:NullToBoolInverseConverter}}"
                                 Icon="{x:Static ui:FluentSystemIcons.ChevronDown_20_Regular}"
                                 ToolTip="{DynamicResource Translate_TextPreprocessingMoveDown}" />
                         </ikw:SimpleStackPanel>
@@ -100,6 +103,7 @@
                         CornerRadius="8"
                         Padding="5">
                         <ListBox
+                            x:Name="RuleList"
                             MaxHeight="360"
                             Background="Transparent"
                             BorderThickness="0"
@@ -160,14 +164,33 @@
                                                 ToolTip="{DynamicResource Enable}"
                                                 VerticalAlignment="Center"
                                                 HorizontalAlignment="Left" />
-                                            <TextBlock
-                                                x:Name="RuleNameText"
-                                                Grid.Column="2"
-                                                Text="{Binding Name}"
-                                                VerticalAlignment="Center"
-                                                TextWrapping="NoWrap"
-                                                TextTrimming="CharacterEllipsis"
-                                                ToolTip="{Binding Name}" />
+                                            <StackPanel Grid.Column="2">
+                                                <DockPanel>
+                                                    <TextBlock Margin="0,0,5,0" DockPanel.Dock="Left">
+                                                        <TextBlock.Text>
+                                                            <MultiBinding Converter="{StaticResource ReplacementOrderConverter}">
+                                                                <Binding />
+                                                                <Binding Path="DataContext.Rules" RelativeSource="{RelativeSource AncestorType=ui:ContentDialog}" />
+                                                                <Binding Path="DataContext.RuleOrderRevision" RelativeSource="{RelativeSource AncestorType=ui:ContentDialog}" />
+                                                            </MultiBinding>
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                    <TextBlock x:Name="RuleNameText" Text="{Binding Name}"
+                                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
+                                                </DockPanel>
+                                                <TextBlock x:Name="RuleSummary" Margin="0,4,0,0"
+                                                    FontSize="{DynamicResource STControlFontSize12}"
+                                                    TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{StaticResource ReplacementSummaryConverter}">
+                                                            <Binding Path="Pattern" />
+                                                            <Binding Path="Replacement" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                     <DataTemplate.Triggers>
@@ -285,6 +308,8 @@
                                 VerticalScrollBarVisibility="Auto"
                                 ui:ControlHelper.CornerRadius="6"
                                 Margin="0,0,0,8" />
+                            <TextBlock Text="{DynamicResource Translate_TextPreprocessingEmptyReplacement}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" />
 
                             <!-- 正则选项 -->
                             <Border

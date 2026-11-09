@@ -203,6 +203,45 @@ public class TextPreprocessingEditorTests
         public void Dispose() => Ready.Dispose();
     }
 
+    [Fact]
+    public async Task RuleCommandsTrackSelectionOrderAndEmptyList()
+    {
+        using var editor = new TextPreprocessingEditViewModel(CreateSettings(), new(), Translate);
+        Assert.False(editor.MoveRuleUpCommand.CanExecute(null));
+        Assert.False(editor.MoveRuleDownCommand.CanExecute(null));
+        Assert.True(editor.RemoveRuleCommand.CanExecute(null));
+        var changes = 0;
+        editor.MoveRuleUpCommand.CanExecuteChanged += (_, _) => changes++;
+        editor.AddRuleCommand.Execute(null);
+        editor.SelectedRule!.Pattern = "public";
+        var selected = editor.SelectedRule;
+        Assert.True(editor.MoveRuleUpCommand.CanExecute(null));
+        Assert.False(editor.MoveRuleDownCommand.CanExecute(null));
+        editor.MoveRuleUpCommand.Execute(null);
+        Assert.Same(selected, editor.Rules[0]);
+        Assert.False(editor.MoveRuleUpCommand.CanExecute(null));
+        Assert.True(editor.MoveRuleDownCommand.CanExecute(null));
+        editor.RemoveRuleCommand.Execute(null);
+        editor.RemoveRuleCommand.Execute(null);
+        Assert.Null(editor.SelectedRule);
+        Assert.False(editor.RemoveRuleCommand.CanExecute(null));
+        Assert.False(editor.MoveRuleUpCommand.CanExecute(null));
+        Assert.False(editor.MoveRuleDownCommand.CanExecute(null));
+        Assert.True(changes > 0);
+        await editor.PreviewTask;
+    }
+
+    [Theory]
+    [InlineData("ACME-\\d+", "Product A", "ACME-\\d+ → Product·A")]
+    [InlineData("remove", "", "remove → ∅")]
+    [InlineData("line", "a\r\n\tb", "line → a␍↵⇥b")]
+    public void RuleSummaryMakesWhitespaceAndEmptyReplacementVisible(string pattern, string replacement, string expected)
+    {
+        var summary = new STranslate.Converters.TextReplacementSummaryConverter().Convert(
+            [pattern, replacement], typeof(string), null!, System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(expected, summary);
+    }
+
     private static Settings CreateSettings() => new()
     {
         TextPreprocessing = new() { IsEnabled = true, Rules = [new() { Pattern = "secret", Replacement = "public" }] }

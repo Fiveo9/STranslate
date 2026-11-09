@@ -57,6 +57,7 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
     [ObservableProperty] public partial string PatternError { get; set; } = string.Empty;
     [ObservableProperty] public partial int? PatternErrorOffset { get; set; }
     [ObservableProperty] public partial bool IsPreviewIncomplete { get; set; }
+    [ObservableProperty] public partial int RuleOrderRevision { get; set; }
     internal Task PreviewTask { get; private set; } = Task.CompletedTask;
 
     partial void OnIsEnabledChanged(bool value)
@@ -66,7 +67,11 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
 
     partial void OnPreviewInputChanged(string value) => QueuePreview();
 
-    partial void OnSelectedRuleChanged(TextReplacementRule? value) => UpdatePatternError();
+    partial void OnSelectedRuleChanged(TextReplacementRule? value)
+    {
+        UpdatePatternError();
+        RefreshRuleCommands();
+    }
 
     [RelayCommand]
     private void AddRule()
@@ -76,7 +81,7 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
         SelectedRule = rule;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRemoveRule))]
     private void RemoveRule()
     {
         if (SelectedRule is not { } rule) return;
@@ -85,8 +90,20 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
         SelectedRule = Rules.ElementAtOrDefault(Math.Min(index, Rules.Count - 1));
     }
 
-    [RelayCommand] private void MoveRuleUp() => MoveRule(-1);
-    [RelayCommand] private void MoveRuleDown() => MoveRule(1);
+    private bool CanRemoveRule() => SelectedRule is not null && Rules.Contains(SelectedRule);
+    private bool CanMoveRuleUp() => SelectedRule is not null && Rules.IndexOf(SelectedRule) > 0;
+    private bool CanMoveRuleDown() => SelectedRule is not null && Rules.IndexOf(SelectedRule) is var index &&
+        index >= 0 && index < Rules.Count - 1;
+
+    [RelayCommand(CanExecute = nameof(CanMoveRuleUp))] private void MoveRuleUp() => MoveRule(-1);
+    [RelayCommand(CanExecute = nameof(CanMoveRuleDown))] private void MoveRuleDown() => MoveRule(1);
+
+    private void RefreshRuleCommands()
+    {
+        RemoveRuleCommand.NotifyCanExecuteChanged();
+        MoveRuleUpCommand.NotifyCanExecuteChanged();
+        MoveRuleDownCommand.NotifyCanExecuteChanged();
+    }
 
     private void MoveRule(int offset)
     {
@@ -98,6 +115,7 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
 
     private void OnRulesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        RuleOrderRevision++;
         if (e.Action != NotifyCollectionChangedAction.Move)
         {
             if (e.OldItems is not null)
@@ -105,6 +123,7 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
             if (e.NewItems is not null)
                 foreach (TextReplacementRule rule in e.NewItems) rule.PropertyChanged += OnRuleChanged;
         }
+        RefreshRuleCommands();
         DraftChanged();
     }
 
