@@ -137,7 +137,10 @@ internal readonly record struct TextPreprocessingLimits(
 internal sealed record TextReplacementMatchSummary(
     string RuleId,
     string RuleName,
-    int MatchCount);
+    int MatchCount,
+    string? InputPreview = null,
+    string? OutputPreview = null,
+    bool IsPreviewAbbreviated = false);
 
 /// <summary>
 /// 本次翻译使用的原文和处理后请求文本。
@@ -201,7 +204,8 @@ public sealed class TextPreprocessingService
     internal PreparedTranslationInput Prepare(
         string text,
         TextPreprocessingSettings? settings,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool includePreview = false)
     {
         ArgumentNullException.ThrowIfNull(text);
 
@@ -226,7 +230,16 @@ public sealed class TextPreprocessingService
         foreach (var rule in enabledRules)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var previousText = currentText;
             currentText = ApplyRule(currentText, rule, summaries, started, cancellationToken);
+            if (includePreview)
+                summaries[^1] = summaries[^1] with
+                {
+                    InputPreview = TextPreprocessingPreviewDiff.Abbreviate(previousText),
+                    OutputPreview = TextPreprocessingPreviewDiff.Abbreviate(currentText),
+                    IsPreviewAbbreviated = previousText.Length > TextPreprocessingPreviewDiff.MaxPreviewLength ||
+                        currentText.Length > TextPreprocessingPreviewDiff.MaxPreviewLength
+                };
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -243,10 +256,11 @@ public sealed class TextPreprocessingService
     }
 
     internal Task<PreparedTranslationInput> PrepareAsync(
-        string text, TextPreprocessingSettings? settings, CancellationToken cancellationToken = default)
+        string text, TextPreprocessingSettings? settings, CancellationToken cancellationToken = default,
+        bool includePreview = false)
     {
         var snapshot = Capture(settings);
-        return Task.Run(() => Prepare(text, snapshot, cancellationToken), cancellationToken);
+        return Task.Run(() => Prepare(text, snapshot, cancellationToken, includePreview), cancellationToken);
     }
 
     internal void Validate(TextPreprocessingSettings settings)

@@ -376,6 +376,9 @@
                         </TextBlock.Style>
                     </TextBlock>
 
+                    <TextBlock Margin="0,0,0,8" TextWrapping="Wrap"
+                        Text="{DynamicResource Translate_TextPreprocessingPreviewOrder}" />
+
                     <!-- 对比输入输出框 -->
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -439,43 +442,44 @@
                         </Grid>
                     </Grid>
 
-                    <!-- 每条规则匹配计数标签 -->
+                    <Expander Margin="0,8,0,0"
+                        Header="{DynamicResource Translate_TextPreprocessingDifference}"
+                        Visibility="{Binding PreviewDiff, Converter={cnvt:EqualToVisibilityInverseConverter}}">
+                        <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="{DynamicResource Translate_TextPreprocessingDifferenceLegend}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                <TextBlock Text="{DynamicResource Translate_TextPreprocessingAbbreviated}" TextWrapping="Wrap" Margin="0,0,0,6"
+                                    Visibility="{Binding PreviewDiff.IsAbbreviated, Converter={cnvt:BoolToVisibilityConverter}}" />
+                                <TextBlock Text="{DynamicResource Translate_TextPreprocessingPreviewInput}" FontWeight="SemiBold" />
+                                <control:TextPreviewDiffBlock Spans="{Binding PreviewDiff.Before}" TextWrapping="Wrap" Margin="0,4,0,8" />
+                                <TextBlock Text="{DynamicResource Translate_TextPreprocessingPreviewResult}" FontWeight="SemiBold" />
+                                <control:TextPreviewDiffBlock Spans="{Binding PreviewDiff.After}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Expander>
+
+                    <!-- 每条规则的命中统计和中间结果 -->
                     <ItemsControl ItemsSource="{Binding PreviewMatches}" Margin="0,8,0,0">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border
-                                    Margin="0,0,6,6"
-                                    Padding="6,3"
-                                    Background="{DynamicResource {x:Static ui:ThemeKeys.ControlFillColorDefaultBrushKey}}"
-                                    BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
-                                    BorderThickness="1"
-                                    CornerRadius="4">
-                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
-                                        <TextBlock
-                                            Text="{Binding RuleName}"
-                                            MaxWidth="140"
-                                            TextTrimming="CharacterEllipsis"
-                                            VerticalAlignment="Center"
-                                            FontSize="{DynamicResource STControlFontSize12}"
-                                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" />
-                                        <Border
-                                            CornerRadius="6"
-                                            Padding="5,1"
-                                            VerticalAlignment="Center"
-                                            Background="{DynamicResource {x:Static ui:ThemeKeys.SolidBackgroundFillColorTertiaryBrushKey}}">
-                                            <TextBlock
-                                                Text="{Binding MatchCount}"
-                                                FontWeight="SemiBold"
-                                                FontSize="{DynamicResource STControlFontSize11}"
-                                                Foreground="{DynamicResource {x:Static ui:ThemeKeys.AccentTextFillColorPrimaryBrushKey}}" />
-                                        </Border>
-                                    </ikw:SimpleStackPanel>
-                                </Border>
+                                <Expander Margin="0,0,0,4">
+                                    <Expander.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding RuleName}" MaxWidth="240" TextTrimming="CharacterEllipsis" ToolTip="{Binding RuleName}" />
+                                            <TextBlock Margin="12,0,0,0">
+                                                <Run Text="{DynamicResource Translate_TextPreprocessingMatchCount}" /><Run Text=": " /><Run Text="{Binding MatchCount, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Expander.Header>
+                                    <StackPanel Margin="0,6,0,8">
+                                        <TextBlock Text="{DynamicResource Translate_TextPreprocessingAbbreviated}" TextWrapping="Wrap"
+                                            Visibility="{Binding IsAbbreviated, Converter={cnvt:BoolToVisibilityConverter}}" />
+                                        <TextBlock Text="{DynamicResource Translate_TextPreprocessingStepBefore}" Margin="0,4,0,4" />
+                                        <TextBox Text="{Binding InputText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MinHeight="32" MaxHeight="90" VerticalScrollBarVisibility="Auto" />
+                                        <TextBlock Text="{DynamicResource Translate_TextPreprocessingStepAfter}" Margin="0,6,0,4" />
+                                        <TextBox Text="{Binding OutputText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MinHeight="32" MaxHeight="90" VerticalScrollBarVisibility="Auto" />
+                                    </StackPanel>
+                                </Expander>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

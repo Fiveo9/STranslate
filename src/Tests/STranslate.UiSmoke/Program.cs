@@ -17,7 +17,8 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        var output = Path.GetFullPath(args.FirstOrDefault() ?? ".artifacts/preprocessing-ui-smoke");
+        var output = Path.GetFullPath(args.FirstOrDefault(arg => !arg.StartsWith("--", StringComparison.Ordinal))
+            ?? ".artifacts/preprocessing-ui-smoke");
         Directory.CreateDirectory(output);
         Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, Constant.PortableFolderName));
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -42,6 +43,12 @@ internal static class Program
                 var trace = new BindingErrorListener();
                 PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error;
                 PresentationTraceSources.DataBindingSource.Listeners.Add(trace);
+                var lineEndingDiff = new TextPreviewDiffBlock
+                {
+                    Spans = TextPreprocessingPreviewDiff.Create("A\r\nB", "A\nB").Before
+                };
+                Require(string.Concat(lineEndingDiff.Inlines.OfType<System.Windows.Documents.Run>().Select(run => run.Text))
+                    == "A␍↵\nB", "A removed CR must not introduce a second displayed line break");
                 foreach (var language in new[] { "zh-cn", "en" })
                 {
                     var resources = new ResourceDictionary { Source = new Uri(Path.Combine(AppContext.BaseDirectory, "Languages", language + ".xaml")) };
@@ -50,13 +57,18 @@ internal static class Program
                         await VerifyDialogAsync(language, size, output);
                     app.Resources.MergedDictionaries.Remove(resources);
                 }
-                await VerifyStorageAsync(output);
-                app.Resources.MergedDictionaries.Add(new ResourceDictionary
-                    { Source = new Uri(Path.Combine(AppContext.BaseDirectory, "Languages", "en.xaml")) });
-                await MainTranslationSmoke.RunAsync();
+                if (!args.Contains("--dialog-only"))
+                {
+                    await VerifyStorageAsync(output);
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary
+                        { Source = new Uri(Path.Combine(AppContext.BaseDirectory, "Languages", "en.xaml")) });
+                    await MainTranslationSmoke.RunAsync();
+                }
                 if (trace.Errors.Count > 0)
                     throw new InvalidOperationException(string.Join(Environment.NewLine, trace.Errors));
-                Console.WriteLine("PASS: Chinese/English dialogs, owner, draft/apply/cancel, preview, request details, layout pixels, Settings restart and ZIP/backup recovery.");
+                Console.WriteLine(args.Contains("--dialog-only")
+                    ? "PASS: Chinese/English dialogs, owner, draft/apply/cancel, preview differences, request details and layout pixels."
+                    : "PASS: Chinese/English dialogs, owner, draft/apply/cancel, preview, request details, layout pixels, Settings restart and ZIP/backup recovery.");
             }
             catch (Exception ex)
             {
@@ -94,6 +106,13 @@ internal static class Program
             Require(boxes.Any(box => box.Text == editor.PreviewText), "Preview binding missing");
             Require(boxes.Any(box => box.Text == original.Rules[0].Pattern), "Rule editor binding missing");
             Require(dialog.ActualWidth <= owner.ActualWidth && dialog.ActualHeight <= owner.ActualHeight, "Dialog exceeds owner");
+            var difference = Descendants(dialog).OfType<Expander>()
+                .Single(expander => Equals(expander.Header, Translate("Translate_TextPreprocessingDifference")));
+            difference.IsExpanded = true;
+            await Task.Delay(80);
+            Require(Descendants(dialog).OfType<TextPreviewDiffBlock>().Any(block =>
+                block.Inlines.OfType<System.Windows.Documents.Run>().Any(run => run.TextDecorations.Count > 0)),
+                "Preview differences are not highlighted");
             Capture(dialog, Path.Combine(output, $"{language}-{size.Width}x{size.Height}.png"));
             editor.Rules[0].Replacement = "Discarded";
             Require(ReferenceEquals(original, settings.TextPreprocessing), "Draft leaked into settings");

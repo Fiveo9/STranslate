@@ -256,6 +256,12 @@
     <sys:String x:Key="Translate_TextPreprocessingPreviewDraft">测试当前草稿，不改变已保存设置。保存后应用本次编辑。</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingPreviewSimulation">草稿总开关已关闭；以下为启用后的模拟结果，正式翻译仍遵循已保存的开关。</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingPreviewResult">测试结果</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingPreviewOrder">测试全部启用规则，从上到下执行；后面的规则处理前面的替换结果。</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingDifference">查看替换前后的差异</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingDifferenceLegend">高亮并带下划线的部分发生了变化。· 表示空格，⇥ 表示制表符，␍ 表示回车 CR，↵ 表示换行 LF。</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingAbbreviated">长文本已简化显示；完整输入和结果请查看上方文本框。</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingStepBefore">本条规则执行前</sys:String>
+    <sys:String x:Key="Translate_TextPreprocessingStepAfter">本条规则执行后</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingNoRuleSelected">请选择一条规则以编辑，或添加新规则</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingIgnoreCaseDescription">(?i) 匹配时忽略大小写</sys:String>
     <sys:String x:Key="Translate_TextPreprocessingMultilineDescription">(?m) 多行模式：^ 和 $ 匹配每一行的行首和行尾</sys:String>

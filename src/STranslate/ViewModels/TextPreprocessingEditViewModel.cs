@@ -52,6 +52,7 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
     [ObservableProperty] public partial int PreviewMatchCount { get; set; }
     [ObservableProperty] public partial bool IsPreviewing { get; set; }
     [ObservableProperty] public partial bool IsSaving { get; set; }
+    [ObservableProperty] public partial TextPreviewComparison? PreviewDiff { get; set; }
     internal Task PreviewTask { get; private set; } = Task.CompletedTask;
 
     partial void OnIsEnabledChanged(bool value)
@@ -138,13 +139,17 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
             await Task.Delay(180, cancellation.Token);
             if (invalid)
                 throw new TextPreprocessingException("", "", "", errorKind: "InvalidConfiguration");
-            var prepared = await _service.PrepareAsync(input, snapshot, cancellation.Token);
+            var prepared = await _service.PrepareAsync(input, snapshot, cancellation.Token, includePreview: true);
+            var difference = await Task.Run(() => TextPreprocessingPreviewDiff.Create(
+                input, prepared.RequestText, cancellation.Token), cancellation.Token);
             if (_disposed || cancellation.IsCancellationRequested) return;
             PreviewText = prepared.RequestText;
+            PreviewDiff = difference;
             PreviewMatchCount = prepared.TotalMatchCount;
             PreviewMatches.Clear();
             foreach (var match in prepared.MatchSummaries)
-                PreviewMatches.Add(new(match.RuleName, match.MatchCount));
+                PreviewMatches.Add(new(match.RuleName, match.MatchCount,
+                    match.InputPreview ?? string.Empty, match.OutputPreview ?? string.Empty, match.IsPreviewAbbreviated));
             PreviewError = string.IsNullOrWhiteSpace(prepared.RequestText)
                 ? _translate("TranslatePreprocessingEmpty") : string.Empty;
         }
@@ -153,6 +158,7 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
         {
             if (_disposed || cancellation.IsCancellationRequested) return;
             PreviewText = string.Empty;
+            PreviewDiff = null;
             PreviewMatchCount = 0;
             PreviewMatches.Clear();
             PreviewError = TextPreprocessingErrorText.Format(ex, _translate);
@@ -205,4 +211,5 @@ public partial class TextPreprocessingEditViewModel : ObservableObject, IDisposa
     }
 }
 
-public sealed record TextReplacementPreview(string RuleName, int MatchCount);
+public sealed record TextReplacementPreview(
+    string RuleName, int MatchCount, string InputText, string OutputText, bool IsAbbreviated);
